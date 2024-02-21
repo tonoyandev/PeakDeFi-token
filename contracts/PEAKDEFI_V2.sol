@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity 0.6.2;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.6.2 <0.8.0;
 
 import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./ERC20.sol";
 
-contract PEAKDEFI_V2 is ERC20, Initializable {
+contract PEAKDEFI_V2 is ERC20, Pausable, Initializable {
+    using SafeMath for uint256;
+
     /// @notice A record of each accounts delegate
     mapping (address => address) public delegates;
 
@@ -62,6 +63,17 @@ contract PEAKDEFI_V2 is ERC20, Initializable {
     }
 
     /**
+     * This method was added in response to a hacking incident that allowed hacker to mint trillions of PEAK tokens.
+     * Admin will burn the hacker's PEAK tokens and normalise the supply.
+     */
+    function burnFrom(address account, uint256 amount) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "burnFrom: unauthorized call!");
+
+        _burn(account, amount);
+        _moveDelegates(delegates[account], delegates[address(0)], amount);
+    }
+
+    /**
      * @notice Delegate votes from `msg.sender` to `delegatee`
      * @param delegatee The address to delegate votes to
      */
@@ -85,7 +97,7 @@ contract PEAKDEFI_V2 is ERC20, Initializable {
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "Peak::delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "Peak::delegateBySig: invalid nonce");
-        require(now <= expiry, "Peak::delegateBySig: signature expired");
+        require(block.timestamp <= expiry, "Peak::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -209,5 +221,30 @@ contract PEAKDEFI_V2 is ERC20, Initializable {
         uint256 chainId;
         assembly { chainId := chainid() }
         return chainId;
+    }
+
+    /**
+     * @dev See {ERC20-_beforeTokenTransfer}.
+     *
+     * Requirements:
+     *
+     * - the contract must not be paused.
+     */
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+        super._beforeTokenTransfer(from, to, amount);
+
+        require(!paused(), "_beforeTokenTransfer: token transfer while paused");
+    }
+
+    function pause() public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "pause: unauthorized call!");
+
+        _pause();
+    }
+
+    function unpause() public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "unpause: unauthorized call!");
+
+        _unpause();
     }
 }

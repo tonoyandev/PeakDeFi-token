@@ -15,7 +15,7 @@
     "deploy:ropsten": "truffle deploy --network ropsten --reset",
     "deploy:bsc": "truffle deploy --network bsc --reset",
     "ganache": "ganache-cli --gas-price 0 -a 30 --unlock --mnemonic genre dress knee lounge expose flash cute valid hard define box outdoor",
-    "flat": "truffle-flattener contracts/PEAKDEFI_V1.sol > flat/PEAKDEFI_V1.sol && truffle-flattener contracts/TokenProxy.sol > flat/TokenProxy.sol"
+    "flat": "truffle-flattener contracts/PEAKDEFI_V2.sol > flat/PEAKDEFI_V2.sol && truffle-flattener contracts/TokenProxy.sol > flat/TokenProxy.sol"
   },
   "repository": {
     "type": "git",
